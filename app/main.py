@@ -1,40 +1,45 @@
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from openpyxl import Workbook
 from io import BytesIO
-from datetime import date
+from datetime import datetime
+from app.parser import parse_barcode  # jouw bestaande logica
 
-# 🔹 Zorg dat je parser.py in dezelfde map app/ staat
-from app.parser import parse_barcode
-
-# =========================================
-# 1️⃣ FastAPI app aanmaken
-# =========================================
 app = FastAPI()
-
-# =========================================
-# 2️⃣ Static files (xlsx.full.min.js)
-# =========================================
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# =========================================
-# 3️⃣ Templates
-# =========================================
 templates = Jinja2Templates(directory="templates")
 
-# =========================================
-# 4️⃣ Routes
-# =========================================
-
-@app.get("/", response_class=HTMLResponse)
+@app.get("/", response_class=JSONResponse)
 def index(request: Request):
-    """
-    Homepagina
-    """
     return templates.TemplateResponse("index.html", {"request": request})
 
+@app.post("/preview")
+def preview_barcodes(barcodes: str = Form(...)):
+    """
+    Voor realtime preview: split barcodes en markeer ongeldig
+    """
+    lines = [l.strip() for l in barcodes.splitlines() if l.strip()]
+    preview = []
+
+    for line in lines:
+        parsed = parse_barcode(line)
+        if parsed and isinstance(parsed, dict):
+            parsed["valid"] = True
+            preview.append(parsed)
+        else:
+            preview.append({
+                "internal_reference": "",
+                "fixed_identifier": "",
+                "variable_identifier_data": "",
+                "amount": "",
+                "amount_data": "",
+                "readable_number": line,
+                "valid": False
+            })
+
+    return JSONResponse(preview)
 
 @app.post("/export")
 def export_to_excel(barcodes: str = Form(...)):
@@ -47,7 +52,7 @@ def export_to_excel(barcodes: str = Form(...)):
             records.append(parsed)
 
     if not records:
-        return {"error": "Geen geldige barcodes gevonden. Controleer het formaat."}
+        return JSONResponse({"error": "Geen geldige barcodes gevonden. Controleer het formaat."}, status_code=400)
 
     wb = Workbook()
     ws = wb.active
@@ -77,8 +82,6 @@ def export_to_excel(barcodes: str = Form(...)):
     wb.save(buffer)
     buffer.seek(0)
 
-    # ✅ Unieke bestandsnaam
-    from datetime import datetime
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"Export_{timestamp}_Records_{len(records)}.xlsx"
 
@@ -87,4 +90,3 @@ def export_to_excel(barcodes: str = Form(...)):
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
-
