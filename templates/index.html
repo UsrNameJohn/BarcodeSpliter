@@ -17,18 +17,109 @@
             font-size: 16px;
             margin-top: 10px;
         }
+        #recordCount {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        #progressContainer {
+            width: 100%;
+            background-color: #f3f3f3;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+            display: none;
+        }
+        #progressBar {
+            width: 0%;
+            height: 20px;
+            background-color: #4caf50;
+            text-align: center;
+            color: white;
+            line-height: 20px;
+        }
     </style>
 </head>
 <body>
 
 <h2>Barcode Splitter</h2>
 
-<form method="post" action="/export">
-    <textarea name="barcodes" placeholder="Plak hier je barcodes, één per regel"></textarea>
+<form id="barcodeForm">
+    <textarea id="barcodeInput" name="barcodes" placeholder="Plak hier je barcodes, één per regel"></textarea>
     <br>
+    <div id="recordCount">Records: 0</div>
+    <div id="progressContainer">
+        <div id="progressBar">0%</div>
+    </div>
     <button type="submit">Verwerken & Download Excel</button>
 </form>
 
+<script>
+    const barcodeInput = document.getElementById("barcodeInput");
+    const recordCount = document.getElementById("recordCount");
+    const progressContainer = document.getElementById("progressContainer");
+    const progressBar = document.getElementById("progressBar");
+    const form = document.getElementById("barcodeForm");
+
+    // Update record count bij typen/plakken
+    barcodeInput.addEventListener("input", () => {
+        const lines = barcodeInput.value.split(/\r?\n/).filter(l => l.trim() !== "");
+        recordCount.textContent = `Records: ${lines.length}`;
+    });
+
+    // Handle form submit
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const lines = barcodeInput.value.split(/\r?\n/).filter(l => l.trim() !== "");
+        if (lines.length === 0) {
+            alert("Plak eerst barcodes!");
+            return;
+        }
+
+        // Toon progress bar
+        progressContainer.style.display = "block";
+        progressBar.style.width = "0%";
+        progressBar.textContent = "0%";
+
+        // FormData voor POST
+        const formData = new FormData();
+        formData.append("barcodes", barcodeInput.value);
+
+        // Fetch POST naar backend
+        const response = await fetch("/export", {
+            method: "POST",
+            body: formData
+        });
+
+        // Simuleer progress bar (alleen visueel, snelle download kan direct 100%)
+        let progress = 0;
+        const interval = setInterval(() => {
+            if (progress < 90) {
+                progress += 10;
+                progressBar.style.width = progress + "%";
+                progressBar.textContent = progress + "%";
+            }
+        }, 100);
+
+        // Download bestand zodra backend klaar is
+        const blob = await response.blob();
+        clearInterval(interval);
+        progressBar.style.width = "100%";
+        progressBar.textContent = "100%";
+
+        const filename = response.headers.get("Content-Disposition").split("filename=")[1];
+        const link = document.createElement("a");
+        link.href = window.URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+
+        // Reset progress bar na korte delay
+        setTimeout(() => {
+            progressContainer.style.display = "none";
+            progressBar.style.width = "0%";
+            progressBar.textContent = "0%";
+        }, 1500);
+    });
+</script>
+
 </body>
 </html>
-
