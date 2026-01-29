@@ -38,9 +38,6 @@ def index(request: Request):
 
 @app.post("/export")
 def export_to_excel(barcodes: str = Form(...)):
-    """
-    Barcode verwerken en exporteren naar Excel
-    """
     lines = [l.strip() for l in barcodes.splitlines() if l.strip()]
     records = []
 
@@ -52,7 +49,6 @@ def export_to_excel(barcodes: str = Form(...)):
     if not records:
         return {"error": "Geen geldige barcodes gevonden. Controleer het formaat."}
 
-    # Excel maken
     wb = Workbook()
     ws = wb.active
     ws.title = "Export"
@@ -77,16 +73,18 @@ def export_to_excel(barcodes: str = Form(...)):
             r.get("readable_number", "")
         ])
 
-    # Excel in geheugen buffer
     buffer = BytesIO()
     wb.save(buffer)
     buffer.seek(0)
 
-    # Bestandnaam dynamisch
-    filename = f"Export_{date.today()}_{len(records)}.xlsx"
+    # ✅ Unieke bestandsnaam
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"Export_{timestamp}_Records_{len(records)}.xlsx"
 
     return StreamingResponse(
         buffer,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
+
