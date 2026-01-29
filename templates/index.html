@@ -1,69 +1,122 @@
 <!DOCTYPE html>
-<html>
+<html lang="nl">
 <head>
+    <meta charset="UTF-8">
     <title>Barcode Splitter</title>
+
+    <!-- Lokale XLSX library -->
+    <script src="/static/xlsx.full.min.js"></script>
+
     <style>
         body {
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            font-family: "Segoe UI", sans-serif;
             max-width: 900px;
             margin: 50px auto;
-            padding: 0 20px;
+            padding: 20px;
             background: #f7f9fc;
             color: #333;
-            transition: background 0.3s, color 0.3s;
+            transition: 0.3s;
         }
-        h2 { text-align: center; color: #1a237e; margin-bottom: 20px; transition: color 0.3s; }
 
-        /* Drag & drop area */
+        body.dark {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        h2 {
+            text-align: center;
+            color: #1a237e;
+        }
+
+        body.dark h2 {
+            color: #90caf9;
+        }
+
+        #darkToggle {
+            float: right;
+            margin-top: -40px;
+            background: none;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            color: #1a237e;
+        }
+
+        body.dark #darkToggle {
+            color: #90caf9;
+        }
+
         #dropArea {
-            width: 100%;
-            padding: 40px;
             border: 2px dashed #1a237e;
             border-radius: 12px;
+            padding: 30px;
             text-align: center;
-            font-size: 18px;
-            color: #1a237e;
             margin-bottom: 15px;
-            transition: background 0.3s, border-color 0.3s;
+            cursor: pointer;
         }
-        #dropArea.hover { background: #e3f2fd; border-color: #3949ab; }
 
-        textarea { width: 100%; height: 150px; border: 2px solid #ccc; border-radius: 8px; padding: 10px; font-size: 14px; resize: vertical; transition: all 0.2s; }
-        textarea:focus { border-color: #1a237e; outline: none; box-shadow: 0 0 8px rgba(26,35,126,0.3); }
+        textarea {
+            width: 100%;
+            height: 160px;
+            border-radius: 8px;
+            border: 2px solid #ccc;
+            padding: 10px;
+            resize: vertical;
+        }
 
-        button { padding: 12px 25px; font-size: 16px; margin-top: 10px; margin-right: 10px; border: none; border-radius: 8px; background: linear-gradient(90deg, #1a237e, #3949ab); color: white; cursor: pointer; transition: all 0.2s; }
-        button:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        body.dark textarea {
+            background: #1e1e1e;
+            color: white;
+            border-color: #3949ab;
+        }
 
-        #recordCount { margin-top: 10px; font-weight: bold; transition: color 0.3s; }
+        button {
+            background: linear-gradient(90deg, #1a237e, #3949ab);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
 
-        #progressContainer { width: 100%; background-color: #e0e0e0; border: 1px solid #ccc; border-radius: 8px; margin-top: 15px; display: none; overflow: hidden; transition: all 0.3s; }
-        #progressBar { width: 0%; height: 24px; background: linear-gradient(90deg,#1a237e,#3949ab); text-align: center; color: white; line-height: 24px; border-radius: 8px; transition: width 0.3s; }
+        button:hover {
+            transform: scale(1.05);
+        }
 
-        /* Dark mode */
-        body.dark-mode { background: #121212; color: #e0e0e0; }
-        body.dark-mode h2 { color: #90caf9; }
-        body.dark-mode textarea { background: #1e1e1e; color: #e0e0e0; border-color: #3949ab; }
-        body.dark-mode #recordCount { color: #90caf9; }
-        body.dark-mode #dropArea { border-color: #90caf9; color: #90caf9; }
-        body.dark-mode #progressContainer { background: #333; border-color: #3949ab; }
-        body.dark-mode #progressBar { background: linear-gradient(90deg,#3949ab,#1a237e); }
+        #recordCount {
+            margin-top: 10px;
+            font-weight: bold;
+        }
 
-        /* Dark mode toggle */
-        #darkToggle { float: right; margin-top: -40px; margin-bottom: 20px; cursor: pointer; font-size: 14px; background: none; border: none; color: #1a237e; font-weight: bold; transition: color 0.3s; }
-        #darkToggle:hover { color: #3949ab; }
-        body.dark-mode #darkToggle { color: #90caf9; }
+        #progressContainer {
+            display: none;
+            background: #ddd;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        #progressBar {
+            height: 24px;
+            width: 0%;
+            background: linear-gradient(90deg, #1a237e, #3949ab);
+            color: white;
+            text-align: center;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
 
 <h2>Barcode Splitter</h2>
+<button id="darkToggle">🌙 Dark mode</button>
 
-<button id="darkToggle">🌙 Dark Mode</button>
+<div id="dropArea">📂 Sleep CSV of Excel hierheen (kolom A)</div>
 
-<div id="dropArea">📂 Sleep je CSV of Excel bestand hierheen of klik om te selecteren</div>
+<form id="form">
+    <textarea id="barcodeInput" placeholder="Of plak hier barcodes (1 per regel)"></textarea>
 
-<form id="barcodeForm">
-    <textarea id="barcodeInput" name="barcodes" placeholder="Of plak hier barcodes, één per regel"></textarea>
     <div id="recordCount">Records: 0</div>
 
     <div id="progressContainer">
@@ -74,123 +127,85 @@
     <button type="button" id="resetBtn">Reset</button>
 </form>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.19.0/xlsx.full.min.js"></script>
 <script>
-    const barcodeInput = document.getElementById("barcodeInput");
-    const recordCount = document.getElementById("recordCount");
-    const progressContainer = document.getElementById("progressContainer");
-    const progressBar = document.getElementById("progressBar");
-    const form = document.getElementById("barcodeForm");
-    const resetBtn = document.getElementById("resetBtn");
-    const darkToggle = document.getElementById("darkToggle");
+    const input = document.getElementById("barcodeInput");
+    const count = document.getElementById("recordCount");
+    const progressC = document.getElementById("progressContainer");
+    const progressB = document.getElementById("progressBar");
     const dropArea = document.getElementById("dropArea");
-    const body = document.body;
 
-    // Update record count live
-    function updateRecordCount() {
-        const lines = barcodeInput.value.split(/\r?\n/).filter(l => l.trim() !== "");
-        recordCount.textContent = `Records: ${lines.length}`;
+    function updateCount() {
+        count.textContent = "Records: " + input.value.split(/\r?\n/).filter(l => l.trim()).length;
     }
-    barcodeInput.addEventListener("input", updateRecordCount);
+    input.addEventListener("input", updateCount);
 
-    // Reset button
-    resetBtn.addEventListener("click", () => {
-        barcodeInput.value = "";
-        updateRecordCount();
-        progressContainer.style.display = "none";
-        progressBar.style.width = "0%";
-        progressBar.textContent = "0%";
-        barcodeInput.focus();
-    });
+    document.getElementById("resetBtn").onclick = () => {
+        input.value = "";
+        updateCount();
+        progressC.style.display = "none";
+    };
 
-    // Dark mode toggle
-    darkToggle.addEventListener("click", () => {
-        body.classList.toggle("dark-mode");
-        darkToggle.textContent = body.classList.contains("dark-mode") ? "☀️ Light Mode" : "🌙 Dark Mode";
-    });
+    document.getElementById("darkToggle").onclick = () => {
+        document.body.classList.toggle("dark");
+    };
 
-    // Drag & drop
-    dropArea.addEventListener("dragover", e => { e.preventDefault(); dropArea.classList.add("hover"); });
-    dropArea.addEventListener("dragleave", e => { e.preventDefault(); dropArea.classList.remove("hover"); });
-    dropArea.addEventListener("drop", e => {
-        e.preventDefault();
-        dropArea.classList.remove("hover");
-        const file = e.dataTransfer.files[0];
-        handleFile(file);
-    });
-    dropArea.addEventListener("click", () => {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = ".csv, .xlsx";
-        input.onchange = () => handleFile(input.files[0]);
-        input.click();
-    });
+    dropArea.onclick = () => {
+        const f = document.createElement("input");
+        f.type = "file";
+        f.accept = ".csv,.xlsx";
+        f.onchange = () => loadFile(f.files[0]);
+        f.click();
+    };
 
-    function handleFile(file) {
+    function loadFile(file) {
         if (!file) return;
-        const reader = new FileReader();
         const ext = file.name.split(".").pop().toLowerCase();
-        reader.onload = function(e) {
-            let barcodes = [];
+        const reader = new FileReader();
+
+        reader.onload = e => {
+            let values = [];
+
             if (ext === "csv") {
-                const text = e.target.result;
-                const lines = text.split(/\r?\n/);
-                lines.forEach(line => {
-                    const cols = line.split(",");
-                    if (cols[0]?.trim()) barcodes.push(cols[0].trim());
+                e.target.result.split(/\r?\n/).forEach(l => {
+                    const v = l.split(",")[0];
+                    if (v) values.push(v.trim());
                 });
-            } else if (ext === "xlsx") {
-                const data = new Uint8Array(e.target.result);
-                const wb = XLSX.read(data, { type: "array" });
-                const ws = wb.Sheets[wb.SheetNames[0]];
-                const json = XLSX.utils.sheet_to_json(ws, { header: 1 });
-                json.forEach(row => { if (row[0]?.toString().trim()) barcodes.push(row[0].toString().trim()); });
             } else {
-                alert("Alleen CSV of Excel bestanden zijn toegestaan!");
-                return;
+                const wb = XLSX.read(new Uint8Array(e.target.result), {type: "array"});
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                XLSX.utils.sheet_to_json(ws, {header:1})
+                    .forEach(r => r[0] && values.push(String(r[0]).trim()));
             }
-            barcodeInput.value = barcodes.join("\n");
-            updateRecordCount();
+
+            input.value = values.join("\n");
+            updateCount();
         };
-        if (ext === "csv") reader.readAsText(file);
-        else if (ext === "xlsx") reader.readAsArrayBuffer(file);
+
+        ext === "csv" ? reader.readAsText(file) : reader.readAsArrayBuffer(file);
     }
 
-    // Form submit
-    form.addEventListener("submit", async (e) => {
+    document.getElementById("form").onsubmit = async e => {
         e.preventDefault();
-        const lines = barcodeInput.value.split(/\r?\n/).filter(l => l.trim() !== "");
-        if (lines.length === 0) { alert("Geen barcodes!"); return; }
+        if (!input.value.trim()) return alert("Geen barcodes");
 
-        progressContainer.style.display = "block";
-        progressBar.style.width = "0%";
-        progressBar.textContent = "0%";
+        progressC.style.display = "block";
+        progressB.style.width = "0%";
+        progressB.textContent = "0%";
 
-        const formData = new FormData();
-        formData.append("barcodes", barcodeInput.value);
+        const fd = new FormData();
+        fd.append("barcodes", input.value);
 
-        const response = await fetch("/export", { method: "POST", body: formData });
+        const res = await fetch("/export", {method:"POST", body:fd});
+        const blob = await res.blob();
 
-        let progress = 0;
-        const interval = setInterval(() => { if(progress<90){progress+=10;progressBar.style.width=progress+"%";progressBar.textContent=progress+"%";} }, 100);
+        progressB.style.width = "100%";
+        progressB.textContent = "100%";
 
-        const blob = await response.blob();
-        clearInterval(interval);
-        progressBar.style.width="100%";
-        progressBar.textContent="100%";
-
-        const filenameHeader = response.headers.get("Content-Disposition") || "";
-        let filename="Export.xlsx";
-        if (filenameHeader.includes("filename=")) filename = filenameHeader.split("filename=")[1];
-
-        const link=document.createElement("a");
-        link.href=window.URL.createObjectURL(blob);
-        link.download=filename;
-        link.click();
-
-        setTimeout(()=>{progressContainer.style.display="none";progressBar.style.width="0%";progressBar.textContent="0%";},1500);
-    });
-
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "export.xlsx";
+        a.click();
+    };
 </script>
 
 </body>
