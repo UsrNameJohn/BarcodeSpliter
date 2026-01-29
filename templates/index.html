@@ -11,11 +11,13 @@
             padding: 0 20px;
             background: #f7f9fc;
             color: #333;
+            transition: background 0.3s, color 0.3s;
         }
         h2 {
             text-align: center;
-            color: #4caf50;
+            color: #1a237e; /* donkerblauw */
             margin-bottom: 30px;
+            transition: color 0.3s;
         }
 
         /* Textarea */
@@ -26,13 +28,13 @@
             border-radius: 8px;
             padding: 10px;
             font-size: 14px;
-            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background 0.3s, color 0.3s;
             resize: vertical;
         }
         textarea:focus {
-            border-color: #4caf50;
+            border-color: #1a237e;
             outline: none;
-            box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+            box-shadow: 0 0 8px rgba(26, 35, 126, 0.3);
         }
 
         /* Buttons */
@@ -43,7 +45,7 @@
             margin-right: 10px;
             border: none;
             border-radius: 8px;
-            background: linear-gradient(90deg, #4caf50, #81c784);
+            background: linear-gradient(90deg, #1a237e, #3949ab);
             color: white;
             cursor: pointer;
             transition: all 0.2s ease-in-out;
@@ -57,6 +59,7 @@
         #recordCount {
             margin-top: 10px;
             font-weight: bold;
+            transition: color 0.3s;
         }
 
         /* Progress bar */
@@ -68,22 +71,70 @@
             margin-top: 15px;
             display: none;
             overflow: hidden;
+            transition: background 0.3s, border 0.3s;
         }
         #progressBar {
             width: 0%;
             height: 24px;
-            background: linear-gradient(90deg, #4caf50, #81c784);
+            background: linear-gradient(90deg, #1a237e, #3949ab);
             text-align: center;
             color: white;
             line-height: 24px;
             border-radius: 8px;
-            transition: width 0.3s ease;
+            transition: width 0.3s ease, background 0.3s;
+        }
+
+        /* Dark mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+        body.dark-mode h2 {
+            color: #90caf9; /* lichtblauw */
+        }
+        body.dark-mode textarea {
+            background: #1e1e1e;
+            color: #e0e0e0;
+            border-color: #3949ab;
+        }
+        body.dark-mode #recordCount {
+            color: #90caf9;
+        }
+        body.dark-mode #progressContainer {
+            background: #333;
+            border-color: #3949ab;
+        }
+        body.dark-mode #progressBar {
+            background: linear-gradient(90deg, #3949ab, #1a237e);
+        }
+
+        /* Dark mode toggle */
+        #darkToggle {
+            float: right;
+            margin-top: -40px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            background: none;
+            border: none;
+            color: #1a237e;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+        #darkToggle:hover {
+            color: #3949ab;
+        }
+        body.dark-mode #darkToggle {
+            color: #90caf9;
         }
     </style>
 </head>
 <body>
 
 <h2>Barcode Splitter</h2>
+
+<!-- Dark mode toggle -->
+<button id="darkToggle">🌙 Dark Mode</button>
 
 <form id="barcodeForm">
     <textarea id="barcodeInput" name="barcodes" placeholder="Plak hier je barcodes, één per regel"></textarea>
@@ -104,6 +155,8 @@
     const progressBar = document.getElementById("progressBar");
     const form = document.getElementById("barcodeForm");
     const resetBtn = document.getElementById("resetBtn");
+    const darkToggle = document.getElementById("darkToggle");
+    const body = document.body;
 
     // Update record count live
     barcodeInput.addEventListener("input", () => {
@@ -179,6 +232,16 @@
         progressBar.style.width = "0%";
         progressBar.textContent = "0%";
         barcodeInput.focus();
+    });
+
+    // Dark mode toggle
+    darkToggle.addEventListener("click", () => {
+        body.classList.toggle("dark-mode");
+        if (body.classList.contains("dark-mode")) {
+            darkToggle.textContent = "☀️ Light Mode";
+        } else {
+            darkToggle.textContent = "🌙 Dark Mode";
+        }
     });
 </script>
 
