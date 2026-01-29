@@ -9,105 +9,27 @@
 
 <style>
 :root {
-    --bg: #f4f6f8;
-    --fg: #1a1a1a;
-    --card: #ffffff;
-    --btn: #1e3a8a;
-    --btn-hover: #1e40af;
-    --border: #cbd5e1;
+    --bg: #f4f6f8; --fg: #1a1a1a; --card: #ffffff;
+    --btn: #1e3a8a; --btn-hover: #1e40af; --border: #cbd5e1;
 }
-
-body.dark {
-    --bg: #0f172a;
-    --fg: #e5e7eb;
-    --card: #020617;
-    --btn: #1e40af;
-    --btn-hover: #1d4ed8;
-    --border: #334155;
-}
-
-body {
-    margin: 0;
-    font-family: system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--fg);
-}
-
-.container {
-    max-width: 900px;
-    margin: 40px auto;
-    padding: 24px;
-}
-
-.card {
-    background: var(--card);
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-}
-
-h1 {
-    margin-top: 0;
-}
-
-textarea {
-    width: 100%;
-    min-height: 160px;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    font-family: monospace;
-    font-size: 14px;
-    background: transparent;
-    color: inherit;
-}
-
-.buttons {
-    display: flex;
-    gap: 12px;
-    margin-top: 16px;
-    flex-wrap: wrap;
-}
-
-button {
-    background: var(--btn);
-    color: #fff;
-    border: none;
-    padding: 10px 18px;
-    border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-button:hover {
-    background: var(--btn-hover);
-}
-
-.dropzone {
-    border: 2px dashed var(--border);
-    border-radius: 10px;
-    padding: 30px;
-    text-align: center;
-    margin-bottom: 16px;
-    transition: 0.2s;
-}
-
-.dropzone.drag {
-    background: rgba(30,58,138,0.1);
-}
-
-.status {
-    margin-top: 10px;
-    font-size: 14px;
-    opacity: 0.8;
-}
-
-.topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-}
+body.dark { --bg:#0f172a; --fg:#e5e7eb; --card:#020617; --btn:#1e40af; --btn-hover:#1d4ed8; --border:#334155;}
+body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--fg);}
+.container { max-width:900px; margin:40px auto; padding:24px; }
+.card { background:var(--card); border-radius:12px; padding:24px; box-shadow:0 10px 25px rgba(0,0,0,0.08);}
+h1 { margin-top:0; }
+textarea { width:100%; min-height:160px; padding:12px; border-radius:8px; border:1px solid var(--border); font-family:monospace; font-size:14px; background:transparent; color:inherit;}
+.buttons { display:flex; gap:12px; margin-top:16px; flex-wrap:wrap; }
+button { background:var(--btn); color:#fff; border:none; padding:10px 18px; border-radius:8px; font-size:14px; cursor:pointer; }
+button:hover { background:var(--btn-hover); }
+.dropzone { border:2px dashed var(--border); border-radius:10px; padding:30px; text-align:center; margin-bottom:16px; transition:.2s; }
+.dropzone.drag { background: rgba(30,58,138,0.1); }
+.status { margin-top:10px; font-size:14px; opacity:0.8; }
+.topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.progress-container { width:100%; background:#cbd5e1; border-radius:8px; overflow:hidden; height:12px; margin-top:12px;}
+.progress-bar { height:12px; width:0%; background:#1e3a8a; transition:0.3s;}
+table { width:100%; margin-top:12px; border-collapse:collapse; font-size:13px; }
+th, td { border:1px solid var(--border); padding:6px; text-align:left; }
+td.invalid { background:#fee2e2; color:#991b1b;}
 </style>
 </head>
 
@@ -120,11 +42,7 @@ button:hover {
             <button onclick="toggleDark()">🌙 Dark mode</button>
         </div>
 
-        <div class="dropzone" id="dropzone">
-            Sleep hier een CSV of Excel bestand<br>
-            <small>(barcodes in kolom A)</small>
-        </div>
-
+        <div class="dropzone" id="dropzone">Sleep hier een CSV of Excel bestand<br><small>(barcodes in kolom A)</small></div>
         <textarea id="barcodes" placeholder="Of plak hier barcodes, één per regel..."></textarea>
 
         <div class="buttons">
@@ -133,6 +51,21 @@ button:hover {
         </div>
 
         <div class="status" id="status">0 records</div>
+        <div class="progress-container"><div class="progress-bar" id="progress"></div></div>
+
+        <table id="preview-table">
+            <thead>
+                <tr>
+                    <th>Internal Ref</th>
+                    <th>Fixed ID</th>
+                    <th>Variable ID</th>
+                    <th>Amount</th>
+                    <th>Amount Data</th>
+                    <th>Readable</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
 
     </div>
 </div>
@@ -141,97 +74,91 @@ button:hover {
 const textarea = document.getElementById("barcodes");
 const statusEl = document.getElementById("status");
 const dropzone = document.getElementById("dropzone");
+const progressBar = document.getElementById("progress");
+const previewTable = document.getElementById("preview-table").querySelector("tbody");
 
 function updateCount() {
-    const count = textarea.value.split("\n").filter(l => l.trim()).length;
+    const count = textarea.value.split("\n").filter(l=>l.trim()).length;
     statusEl.textContent = count + " records";
+    fetchPreview();
 }
 textarea.addEventListener("input", updateCount);
 
-function toggleDark() {
-    document.body.classList.toggle("dark");
-}
-
-function resetAll() {
-    textarea.value = "";
-    updateCount();
-}
+function toggleDark() { document.body.classList.toggle("dark"); }
+function resetAll() { textarea.value=""; updateCount(); progressBar.style.width="0%"; previewTable.innerHTML=""; }
 
 // Drag & drop
-dropzone.addEventListener("dragover", e => {
-    e.preventDefault();
-    dropzone.classList.add("drag");
-});
-dropzone.addEventListener("dragleave", () => dropzone.classList.remove("drag"));
-dropzone.addEventListener("drop", e => {
-    e.preventDefault();
-    dropzone.classList.remove("drag");
-    handleFile(e.dataTransfer.files[0]);
-});
+dropzone.addEventListener("dragover", e=>{ e.preventDefault(); dropzone.classList.add("drag"); });
+dropzone.addEventListener("dragleave", ()=>dropzone.classList.remove("drag"));
+dropzone.addEventListener("drop", e=>{ e.preventDefault(); dropzone.classList.remove("drag"); handleFile(e.dataTransfer.files[0]); });
 
-function handleFile(file) {
-    if (!file) return;
+function handleFile(file){
+    if(!file) return;
     const ext = file.name.split(".").pop().toLowerCase();
-
-    if (ext === "csv") {
-        const reader = new FileReader();
-        reader.onload = e => {
-            textarea.value = e.target.result;
-            updateCount();
-        };
-        reader.readAsText(file);
-    }
-    else if (ext === "xlsx" || ext === "xls") {
-        if (typeof XLSX === "undefined") { alert("XLSX library niet geladen"); return; }
-        const reader = new FileReader();
-        reader.onload = e => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: "array" });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-            const values = rows.map(r => r[0]).filter(v => v!==undefined && v!==null && String(v).trim()!=="");
-            textarea.value = values.join("\n");
-            updateCount();
-        };
-        reader.readAsArrayBuffer(file);
-    }
-    else { alert("Alleen CSV of Excel toegestaan"); }
+    if(ext==="csv"){ const reader=new FileReader(); reader.onload=e=>{ textarea.value=e.target.result; updateCount(); }; reader.readAsText(file); }
+    else if(ext==="xlsx"||ext==="xls"){ if(typeof XLSX==="undefined"){ alert("XLSX library niet geladen"); return; } const reader=new FileReader(); reader.onload=e=>{ const data=new Uint8Array(e.target.result); const workbook=XLSX.read(data,{type:"array"}); const sheet=workbook.Sheets[workbook.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(sheet,{header:1}); const values=rows.map(r=>r[0]).filter(v=>v!==undefined && v!==null && String(v).trim()!==""); textarea.value=values.join("\n"); updateCount(); }; reader.readAsArrayBuffer(file); }
+    else{ alert("Alleen CSV of Excel toegestaan"); }
 }
 
-// Export met unieke bestandsnaam van backend
-async function exportExcel() {
+// Preview ophalen van backend
+async function fetchPreview(){
+    const content=textarea.value.trim();
+    if(!content) return;
+    const fd=new FormData();
+    fd.append("barcodes", content);
+    const res = await fetch("/preview", {method:"POST", body:fd});
+    const data = await res.json();
+
+    previewTable.innerHTML="";
+    data.forEach(r=>{
+        const tr=document.createElement("tr");
+        ["internal_reference","fixed_identifier","variable_identifier_data","amount","amount_data","readable_number"].forEach(k=>{
+            const td=document.createElement("td");
+            td.textContent = r[k] || "";
+            if(r.valid===false) td.classList.add("invalid");
+            tr.appendChild(td);
+        });
+        previewTable.appendChild(tr);
+    });
+}
+
+// Export met progress bar
+async function exportExcel(){
     const content = textarea.value.trim();
-    if (!content) { alert("Geen barcodes ingevoerd"); return; }
+    if(!content){ alert("Geen barcodes ingevoerd"); return; }
+
+    progressBar.style.width="0%";
 
     const fd = new FormData();
     fd.append("barcodes", content);
 
-    const res = await fetch("/export", { method: "POST", body: fd });
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST","/export",true);
+    xhr.responseType="blob";
 
-    const contentType = res.headers.get("content-type");
+    xhr.upload.onprogress = e=>{
+        if(e.lengthComputable){
+            const percent = (e.loaded/e.total)*100;
+            progressBar.style.width = percent+"%";
+        }
+    };
 
-    // ✅ Frontend foutmelding
-    if (contentType && contentType.includes("application/json")) {
-        const err = await res.json();
-        alert(err.error || "Onbekende fout");
-        return;
-    }
+    xhr.onload = ()=>{
+        progressBar.style.width="100%";
+        if(xhr.status===200){
+            const cd = xhr.getResponseHeader("Content-Disposition");
+            let filename = "export.xlsx";
+            if(cd && cd.indexOf("filename=")!==-1){ filename=cd.split("filename=")[1].replace(/"/g,''); }
 
-    // Blob ophalen
-    const blob = await res.blob();
-
-    // Haal de bestandsnaam uit Content-Disposition header van backend
-    let filename = "export.xlsx"; // fallback
-    const cd = res.headers.get("Content-Disposition");
-    if (cd && cd.indexOf("filename=") !== -1) {
-        filename = cd.split("filename=")[1].replace(/"/g,'');
-    }
-
-    const a = document.createElement("a");
-    a.href = window.URL.createObjectURL(blob);
-    a.download = filename; // 🟢 uniek van backend
-    a.click();
-    window.URL.revokeObjectURL(a.href);
+            const url = window.URL.createObjectURL(xhr.response);
+            const a=document.createElement("a");
+            a.href=url; a.download=filename; a.click();
+            window.URL.revokeObjectURL(url);
+        } else {
+            alert("Fout bij export, controleer de barcodes");
+        }
+    };
+    xhr.send(fd);
 }
 </script>
 
