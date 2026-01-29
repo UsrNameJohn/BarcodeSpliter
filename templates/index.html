@@ -16,6 +16,7 @@
             padding: 10px 20px;
             font-size: 16px;
             margin-top: 10px;
+            margin-right: 10px;
         }
         #recordCount {
             margin-top: 10px;
@@ -50,6 +51,7 @@
         <div id="progressBar">0%</div>
     </div>
     <button type="submit">Verwerken & Download Excel</button>
+    <button type="button" id="resetBtn">Reset</button>
 </form>
 
 <script>
@@ -58,6 +60,7 @@
     const progressContainer = document.getElementById("progressContainer");
     const progressBar = document.getElementById("progressBar");
     const form = document.getElementById("barcodeForm");
+    const resetBtn = document.getElementById("resetBtn");
 
     // Update record count bij typen/plakken
     barcodeInput.addEventListener("input", () => {
@@ -90,7 +93,7 @@
             body: formData
         });
 
-        // Simuleer progress bar (alleen visueel, snelle download kan direct 100%)
+        // Simuleer progress bar (alleen visueel)
         let progress = 0;
         const interval = setInterval(() => {
             if (progress < 90) {
@@ -118,6 +121,15 @@
             progressBar.style.width = "0%";
             progressBar.textContent = "0%";
         }, 1500);
+    });
+
+    // RESET knop functionaliteit
+    resetBtn.addEventListener("click", () => {
+        barcodeInput.value = "";
+        recordCount.textContent = "Records: 0";
+        progressContainer.style.display = "none";
+        progressBar.style.width = "0%";
+        progressBar.textContent = "0%";
     });
 </script>
 
