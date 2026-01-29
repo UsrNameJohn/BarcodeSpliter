@@ -1,115 +1,114 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8" />
-    <title>Barcode Splitter</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8" />
+<title>Barcode Splitter</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- XLSX lokaal -->
-    <script src="/static/xlsx.full.min.js"></script>
+<script src="/static/xlsx.full.min.js"></script>
 
-    <style>
-        :root {
-            --bg: #f4f6f8;
-            --fg: #1a1a1a;
-            --card: #ffffff;
-            --btn: #1e3a8a;
-            --btn-hover: #1e40af;
-            --border: #cbd5e1;
-        }
+<style>
+:root {
+    --bg: #f4f6f8;
+    --fg: #1a1a1a;
+    --card: #ffffff;
+    --btn: #1e3a8a;
+    --btn-hover: #1e40af;
+    --border: #cbd5e1;
+}
 
-        body.dark {
-            --bg: #0f172a;
-            --fg: #e5e7eb;
-            --card: #020617;
-            --btn: #1e40af;
-            --btn-hover: #1d4ed8;
-            --border: #334155;
-        }
+body.dark {
+    --bg: #0f172a;
+    --fg: #e5e7eb;
+    --card: #020617;
+    --btn: #1e40af;
+    --btn-hover: #1d4ed8;
+    --border: #334155;
+}
 
-        body {
-            margin: 0;
-            font-family: system-ui, sans-serif;
-            background: var(--bg);
-            color: var(--fg);
-        }
+body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+}
 
-        .container {
-            max-width: 900px;
-            margin: 40px auto;
-            padding: 24px;
-        }
+.container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 24px;
+}
 
-        .card {
-            background: var(--card);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-        }
+.card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
 
-        h1 {
-            margin-top: 0;
-        }
+h1 {
+    margin-top: 0;
+}
 
-        textarea {
-            width: 100%;
-            min-height: 160px;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            font-family: monospace;
-            font-size: 14px;
-            background: transparent;
-            color: inherit;
-        }
+textarea {
+    width: 100%;
+    min-height: 160px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-family: monospace;
+    font-size: 14px;
+    background: transparent;
+    color: inherit;
+}
 
-        .buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
-            flex-wrap: wrap;
-        }
+.buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
 
-        button {
-            background: var(--btn);
-            color: #fff;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-        }
+button {
+    background: var(--btn);
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+}
 
-        button:hover {
-            background: var(--btn-hover);
-        }
+button:hover {
+    background: var(--btn-hover);
+}
 
-        .dropzone {
-            border: 2px dashed var(--border);
-            border-radius: 10px;
-            padding: 30px;
-            text-align: center;
-            margin-bottom: 16px;
-            transition: 0.2s;
-        }
+.dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 30px;
+    text-align: center;
+    margin-bottom: 16px;
+    transition: 0.2s;
+}
 
-        .dropzone.drag {
-            background: rgba(30,58,138,0.1);
-        }
+.dropzone.drag {
+    background: rgba(30,58,138,0.1);
+}
 
-        .status {
-            margin-top: 10px;
-            font-size: 14px;
-            opacity: 0.8;
-        }
+.status {
+    margin-top: 10px;
+    font-size: 14px;
+    opacity: 0.8;
+}
 
-        .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-    </style>
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+</style>
 </head>
 
 <body>
@@ -147,7 +146,6 @@ function updateCount() {
     const count = textarea.value.split("\n").filter(l => l.trim()).length;
     statusEl.textContent = count + " records";
 }
-
 textarea.addEventListener("input", updateCount);
 
 function toggleDark() {
@@ -159,15 +157,12 @@ function resetAll() {
     updateCount();
 }
 
+// Drag & drop
 dropzone.addEventListener("dragover", e => {
     e.preventDefault();
     dropzone.classList.add("drag");
 });
-
-dropzone.addEventListener("dragleave", () => {
-    dropzone.classList.remove("drag");
-});
-
+dropzone.addEventListener("dragleave", () => dropzone.classList.remove("drag"));
 dropzone.addEventListener("drop", e => {
     e.preventDefault();
     dropzone.classList.remove("drag");
@@ -176,7 +171,6 @@ dropzone.addEventListener("drop", e => {
 
 function handleFile(file) {
     if (!file) return;
-
     const ext = file.name.split(".").pop().toLowerCase();
 
     if (ext === "csv") {
@@ -188,65 +182,56 @@ function handleFile(file) {
         reader.readAsText(file);
     }
     else if (ext === "xlsx" || ext === "xls") {
-        if (typeof XLSX === "undefined") {
-            alert("XLSX library niet geladen");
-            return;
-        }
-
+        if (typeof XLSX === "undefined") { alert("XLSX library niet geladen"); return; }
         const reader = new FileReader();
         reader.onload = e => {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: "array" });
             const sheet = workbook.Sheets[workbook.SheetNames[0]];
             const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-            const values = rows
-                .map(r => r[0])
-                .filter(v => v !== undefined && v !== null && String(v).trim() !== "");
-
+            const values = rows.map(r => r[0]).filter(v => v!==undefined && v!==null && String(v).trim()!=="");
             textarea.value = values.join("\n");
             updateCount();
         };
         reader.readAsArrayBuffer(file);
     }
-    else {
-        alert("Alleen CSV of Excel toegestaan");
-    }
+    else { alert("Alleen CSV of Excel toegestaan"); }
 }
 
+// Export met unieke bestandsnaam van backend
 async function exportExcel() {
     const content = textarea.value.trim();
-    if (!content) {
-        alert("Geen barcodes ingevoerd");
-        return;
-    }
+    if (!content) { alert("Geen barcodes ingevoerd"); return; }
 
     const fd = new FormData();
     fd.append("barcodes", content);
 
-    const res = await fetch("/export", {
-        method: "POST",
-        body: fd
-    });
+    const res = await fetch("/export", { method: "POST", body: fd });
 
     const contentType = res.headers.get("content-type");
 
-    // ✅ FRONTEND FOUTMELDING
+    // ✅ Frontend foutmelding
     if (contentType && contentType.includes("application/json")) {
         const err = await res.json();
         alert(err.error || "Onbekende fout");
         return;
     }
 
+    // Blob ophalen
     const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
+
+    // Haal de bestandsnaam uit Content-Disposition header van backend
+    let filename = "export.xlsx"; // fallback
+    const cd = res.headers.get("Content-Disposition");
+    if (cd && cd.indexOf("filename=") !== -1) {
+        filename = cd.split("filename=")[1].replace(/"/g,'');
+    }
 
     const a = document.createElement("a");
-    a.href = url;
-    a.download = "export.xlsx";
+    a.href = window.URL.createObjectURL(blob);
+    a.download = filename; // 🟢 uniek van backend
     a.click();
-
-    window.URL.revokeObjectURL(url);
+    window.URL.revokeObjectURL(a.href);
 }
 </script>
 
