@@ -3,39 +3,81 @@
 <head>
     <title>Barcode Splitter</title>
     <style>
+        /* Body & fonts */
         body {
-            font-family: Arial;
-            max-width: 800px;
-            margin: 40px auto;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 0 20px;
+            background: #f7f9fc;
+            color: #333;
         }
+        h2 {
+            text-align: center;
+            color: #4caf50;
+            margin-bottom: 30px;
+        }
+
+        /* Textarea */
         textarea {
             width: 100%;
             height: 300px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            resize: vertical;
         }
+        textarea:focus {
+            border-color: #4caf50;
+            outline: none;
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+        }
+
+        /* Buttons */
         button {
-            padding: 10px 20px;
+            padding: 12px 25px;
             font-size: 16px;
             margin-top: 10px;
             margin-right: 10px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #4caf50, #81c784);
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
         }
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* Record count */
         #recordCount {
             margin-top: 10px;
             font-weight: bold;
         }
+
+        /* Progress bar */
         #progressContainer {
             width: 100%;
-            background-color: #f3f3f3;
+            background-color: #e0e0e0;
             border: 1px solid #ccc;
-            margin-top: 10px;
+            border-radius: 8px;
+            margin-top: 15px;
             display: none;
+            overflow: hidden;
         }
         #progressBar {
             width: 0%;
-            height: 20px;
-            background-color: #4caf50;
+            height: 24px;
+            background: linear-gradient(90deg, #4caf50, #81c784);
             text-align: center;
             color: white;
-            line-height: 20px;
+            line-height: 24px;
+            border-radius: 8px;
+            transition: width 0.3s ease;
         }
     </style>
 </head>
@@ -45,11 +87,12 @@
 
 <form id="barcodeForm">
     <textarea id="barcodeInput" name="barcodes" placeholder="Plak hier je barcodes, één per regel"></textarea>
-    <br>
     <div id="recordCount">Records: 0</div>
+
     <div id="progressContainer">
         <div id="progressBar">0%</div>
     </div>
+
     <button type="submit">Verwerken & Download Excel</button>
     <button type="button" id="resetBtn">Reset</button>
 </form>
@@ -62,13 +105,13 @@
     const form = document.getElementById("barcodeForm");
     const resetBtn = document.getElementById("resetBtn");
 
-    // Update record count bij typen/plakken
+    // Update record count live
     barcodeInput.addEventListener("input", () => {
         const lines = barcodeInput.value.split(/\r?\n/).filter(l => l.trim() !== "");
         recordCount.textContent = `Records: ${lines.length}`;
     });
 
-    // Handle form submit
+    // Form submit
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -78,22 +121,22 @@
             return;
         }
 
-        // Toon progress bar
+        // Show progress bar
         progressContainer.style.display = "block";
         progressBar.style.width = "0%";
         progressBar.textContent = "0%";
 
-        // FormData voor POST
+        // Prepare form data
         const formData = new FormData();
         formData.append("barcodes", barcodeInput.value);
 
-        // Fetch POST naar backend
+        // Fetch POST
         const response = await fetch("/export", {
             method: "POST",
             body: formData
         });
 
-        // Simuleer progress bar (alleen visueel)
+        // Simulate progress visually
         let progress = 0;
         const interval = setInterval(() => {
             if (progress < 90) {
@@ -103,19 +146,24 @@
             }
         }, 100);
 
-        // Download bestand zodra backend klaar is
+        // Download Excel
         const blob = await response.blob();
         clearInterval(interval);
         progressBar.style.width = "100%";
         progressBar.textContent = "100%";
 
-        const filename = response.headers.get("Content-Disposition").split("filename=")[1];
+        const filenameHeader = response.headers.get("Content-Disposition") || "";
+        let filename = "Export.xlsx";
+        if (filenameHeader.includes("filename=")) {
+            filename = filenameHeader.split("filename=")[1];
+        }
+
         const link = document.createElement("a");
         link.href = window.URL.createObjectURL(blob);
         link.download = filename;
         link.click();
 
-        // Reset progress bar na korte delay
+        // Reset progress bar after short delay
         setTimeout(() => {
             progressContainer.style.display = "none";
             progressBar.style.width = "0%";
@@ -123,13 +171,14 @@
         }, 1500);
     });
 
-    // RESET knop functionaliteit
+    // Reset button
     resetBtn.addEventListener("click", () => {
         barcodeInput.value = "";
         recordCount.textContent = "Records: 0";
         progressContainer.style.display = "none";
         progressBar.style.width = "0%";
         progressBar.textContent = "0%";
+        barcodeInput.focus();
     });
 </script>
 
