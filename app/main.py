@@ -5,7 +5,7 @@ from openpyxl import Workbook
 from io import BytesIO
 from datetime import date
 
-from parser import parse_barcode
+from app.parser import parse_barcode
 
 app = FastAPI()
 
