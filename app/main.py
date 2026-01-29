@@ -1,22 +1,58 @@
+from fastapi import FastAPI, Request, Form
+from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from openpyxl import Workbook
+from io import BytesIO
+from datetime import date
+
+# 🔹 Zorg dat je parser.py in dezelfde map app/ staat
+from app.parser import parse_barcode
+
+# =========================================
+# 1️⃣ FastAPI app aanmaken
+# =========================================
+app = FastAPI()
+
+# =========================================
+# 2️⃣ Static files (xlsx.full.min.js)
+# =========================================
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# =========================================
+# 3️⃣ Templates
+# =========================================
+templates = Jinja2Templates(directory="templates")
+
+# =========================================
+# 4️⃣ Routes
+# =========================================
+
+@app.get("/", response_class=HTMLResponse)
+def index(request: Request):
+    """
+    Homepagina
+    """
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
 @app.post("/export")
 def export_to_excel(barcodes: str = Form(...)):
+    """
+    Barcode verwerken en exporteren naar Excel
+    """
     lines = [l.strip() for l in barcodes.splitlines() if l.strip()]
     records = []
 
     for line in lines:
         parsed = parse_barcode(line)
+        if parsed and isinstance(parsed, dict):
+            records.append(parsed)
 
-        if not parsed or not isinstance(parsed, dict):
-            continue  # ongeldige barcode → overslaan
-
-        records.append(parsed)
-
-    # 🔒 BELANGRIJK: stop als niets geldig is
     if not records:
-        return {
-            "error": "Geen geldige barcodes gevonden. Controleer het formaat."
-        }
+        return {"error": "Geen geldige barcodes gevonden. Controleer het formaat."}
 
+    # Excel maken
     wb = Workbook()
     ws = wb.active
     ws.title = "Export"
@@ -41,16 +77,16 @@ def export_to_excel(barcodes: str = Form(...)):
             r.get("readable_number", "")
         ])
 
+    # Excel in geheugen buffer
     buffer = BytesIO()
     wb.save(buffer)
     buffer.seek(0)
 
+    # Bestandnaam dynamisch
     filename = f"Export_{date.today()}_{len(records)}.xlsx"
 
     return StreamingResponse(
         buffer,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"'
-        }
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
